@@ -1,18 +1,19 @@
-import {createBrowserRouter, RouterProvider} from "react-router-dom";
+import {createBrowserRouter, RouterProvider, type ActionFunctionArgs, type LoaderFunctionArgs} from "react-router-dom";
 
 import HomePage from "./pages/Home";
-import EventsPage from "./pages/Events";
-import EventDetailPage from "./pages/EventDetail";
-import NewEventPage from "./pages/NewEvent";
-import EditEventPage from "./pages/EditEvent";
 import RootLayout from "./pages/Root";
 import EventsRootLayout from './pages/EventsRoot';
 import NewsletterPage from "./pages/Newsletter";
-import { eventsLoader, eventsDetailLoader } from "./pages/loaders";
-import { submitEventAction, submitDeleteEventAction, submitNewsletterSignup, submitAuthForm, logoutAction } from "./pages/actions";
+import { submitNewsletterSignup, submitAuthForm, logoutAction } from "./pages/actions";
 import { tokenLoader, checkAuthLoader } from "./util/auth";
 import ErrorPage from "./pages/Error";
 import Authentication from "./pages/Authentication";
+import { lazy, Suspense } from "react";
+
+const EventsPage = lazy(() => import("./pages/Events"));
+const EventDetailPage = lazy(() => import("./pages/EventDetail"));
+const NewEventPage = lazy(() => import("./pages/NewEvent"));
+const EditEventPage = lazy(() => import("./pages/EditEvent"));
 
 const router = createBrowserRouter([
   {
@@ -32,32 +33,32 @@ const router = createBrowserRouter([
         children: [
           {
             index: true,
-            element: <EventsPage />,
-            loader: eventsLoader
+            element: <Suspense fallback={<p>Loading...</p>}><EventsPage /></Suspense>,
+            loader: () => import("./pages/loaders").then(module => module.eventsLoader()),
           },
           {
             path: ':eventId',
-            loader: eventsDetailLoader,
+            loader: (args: LoaderFunctionArgs) => import("./pages/loaders").then(module => module.eventsDetailLoader(args)),
             id: "event-detail",
             children: [
               {
                 index: true,
-                element: <EventDetailPage />,
-                action: submitDeleteEventAction
+                element: <Suspense fallback={<p>Loading...</p>}><EventDetailPage /></Suspense>,
+                action: (args: ActionFunctionArgs) => import("./pages/actions").then(module => module.submitDeleteEventAction(args)),
               },
               {
                 path: 'edit',
                 loader: checkAuthLoader,
-                element: <EditEventPage />,
-                action: submitEventAction,
+                element: <Suspense fallback={<p>Loading...</p>}><EditEventPage /></Suspense>,
+                action: (args: ActionFunctionArgs) => import("./pages/actions").then(module => module.submitEventAction(args)),
               }
             ]
           },
           {
             path: 'new',
             loader: checkAuthLoader,
-            element: <NewEventPage />,
-            action: submitEventAction,
+            element: <Suspense fallback={<p>Loading...</p>}><NewEventPage /></Suspense>,
+            action: (args: ActionFunctionArgs) => import("./pages/actions").then(module => module.submitEventAction(args)),
           }
         ]
       },
